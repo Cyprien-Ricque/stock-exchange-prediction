@@ -8,6 +8,8 @@ pip3 install kaggle
 -- Add your credentials see: https://github.com/Kaggle/kaggle-api
 kaggle competitions download -c jpx-tokyo-stock-exchange-prediction
 ````
+Then, move the downloaded folder "jpx-tokyo-stock-exchange-prediction" in ./data
+
 
 ## Understand the competition with examples
 

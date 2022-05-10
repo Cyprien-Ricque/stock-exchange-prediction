@@ -3,7 +3,7 @@ device: 'cpu'
 seed: False
 
 data:
-    path: './data/...'
+    path: './data/'
 
 model:
     name: 'gmm'
