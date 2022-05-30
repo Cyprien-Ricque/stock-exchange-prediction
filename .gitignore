@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+./data/jpx-tokyo-stock-exchange-prediction/data_specifications
+./data/jpx-tokyo-stock-exchange-prediction/example_test_files
+./data/save
+./data/jpx-tokyo-stock-exchange-prediction/train_files/financials.csv
+./data/jpx-tokyo-stock-exchange-prediction/train_files/options.csv
+./data/jpx-tokyo-stock-exchange-prediction/train_files/secondary_stock_prices.csv
+./data/jpx-tokyo-stock-exchange-prediction/train_files/trades.csv
+./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/financials.csv
+./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/options.csv
+./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/secondary_stock_prices.csv
+./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/trades.csv
+
