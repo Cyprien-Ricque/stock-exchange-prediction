@@ -1,0 +1,4 @@
+data/jpx-tokyo-stock-exchange-prediction filter=lfs diff=lfs merge=lfs -text
+data/jpx-tokyo-stock-exchange-prediction.zip filter=lfs diff=lfs merge=lfs -text
+data/save filter=lfs diff=lfs merge=lfs -text
+data/suppl filter=lfs diff=lfs merge=lfs -text
