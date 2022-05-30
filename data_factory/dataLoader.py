@@ -18,6 +18,7 @@ class StockPricesLoader:
         logger.setLevel(log_level)
 
         config = load_config(config_file)
+        self.config = config
 
         self.model = config['model']
         self.model_config = config[self.model]
@@ -68,6 +69,7 @@ class StockPricesLoader:
 
         self.load()
         self.preprocess()
+        self.add_related_stocks()
         self.to_timeseries()
         self.to_dataloader()
         self.to_file()
@@ -193,27 +195,29 @@ class StockPricesLoader:
         self.df_test_ppc_ext = dt['df_test_ppc_ext']
 
     def to_timeseries(self):
+        additionals_cols = [f'Close_scaled_top_{i}' for i in range(self.related_stocks)]
+        logger.info(f'Add columns {additionals_cols}')
         # Train timeseries
         self.df_train_timeseries = TimeSeriesDataSet(self.df_train_ppc,
                                                      time_idx='Timestamp',
                                                      target='Close_scaled',
                                                      group_ids=['SecuritiesCode'],
                                                      allow_missing_timesteps=False,
-                                                     static_categoricals=['SecuritiesCode'],
+                                                     # static_categoricals=['SecuritiesCode'],
                                                      time_varying_unknown_reals=['Close_scaled'],
                                                      # time_varying_unknown_reals=['Open', 'High', 'Low', 'Close', 'Volume'],
                                                      # time_varying_unknown_categoricals=['SupervisionFlag'],
-                                                     # time_varying_known_reals=['Timestamp'],
+                                                     time_varying_known_reals=additionals_cols,
 
                                                      min_encoder_length=self.min_encoder_length,
                                                      max_encoder_length=self.max_encoder_length,
                                                      max_prediction_length=self.max_prediction_length,
                                                      min_prediction_length=self.min_prediction_length,
-                                                     scalers={col: None for col in ['Open', 'High', 'Low', 'Volume', 'AdjustmentFactor', 'ExpectedDividend']},
+                                                     scalers={col: None for col in ['Open', 'High', 'Low', 'Volume', 'AdjustmentFactor', 'ExpectedDividend'] + additionals_cols},
                                                      target_normalizer=None,
-                                                     add_relative_time_idx=True,
-                                                     add_target_scales=True,
-                                                     add_encoder_length=True,
+                                                     add_relative_time_idx=False,
+                                                     add_target_scales=False,
+                                                     add_encoder_length=False,
                                                      )
         logger.debug('train timeseries created')
 
@@ -268,6 +272,35 @@ class StockPricesLoader:
         #  Fill missing dates in test dataframe so that the behaviour of TimeSeriesDataSet is always the same.
         self.df_test_ppc_ext = fill_missing_dates(self.df_test_ppc_ext, 'Date', 'Timestamp', 'SecuritiesCode', '1d',
                                                   fill_with_value={'ExpectedDividend': 0})
+
+    def add_related_stocks(self):
+        n = self.related_stocks
+        if not n:
+            return
+
+        cosine = pd.read_csv(self.config['data']['suppl'] + self.config['data']['cosine'])
+        cosine.set_index('ticker', inplace=True)
+        self.top = cosine.apply(lambda s: pd.Series(s.nlargest(3).index)).T.astype(str).rename(columns=str)
+        missing_keys = list(set(self.df_train_ppc.SecuritiesCode.unique()) - set(cosine.columns))
+        logger.info(f"Len missing Securities Code in {self.config['data']['cosine']}: {len(missing_keys)} ")
+
+        self.top = pd.concat([self.top, pd.DataFrame({str(i): missing_keys for i in range(n)}, index=missing_keys)])
+
+        def _add_stocks(df: pd.DataFrame):
+            for t, col in [(f'top_{i}', str(i)) for i in range(n)]:
+                df[t] = df.SecuritiesCode.transform(lambda x: self.top.loc[x, col])
+                df = df.merge(df.loc[:, ['SecuritiesCode', 'Timestamp', 'Close', 'Close_scaled']],
+                              how='left',
+                              left_on=[t, 'Timestamp'],
+                              right_on=['SecuritiesCode', 'Timestamp'],
+                              suffixes=('', f'_{t}')).drop(columns=f'SecuritiesCode_{t}')
+                df[f'Close_scaled_{t}'] = df[f'Close_scaled_{t}'].shift(self.max_prediction_length)
+            return df.fillna(value=0)
+
+        self.df_train_ppc = _add_stocks(self.df_train_ppc)
+        self.df_test_ppc = _add_stocks(self.df_test_ppc)
+        self.df_test_ppc_ext = _add_stocks(self.df_test_ppc_ext)
+        self.df_val_ppc = _add_stocks(self.df_val_ppc)
 
 
 if __name__ == '__main__':
