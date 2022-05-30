@@ -22,16 +22,32 @@ rnn:
     sliding_window:
         max_prediction_length: 10
         min_prediction_length: 10
-        max_encoder_length: 50
-        min_encoder_length: 50
+        max_encoder_length: 150
+        min_encoder_length: 150
         batch_size: 64
 
-    train_val_split: 0.95
+    train_val_split: 1
     related_stock: 2  # 0 to disable
     manual_scale: True
     hidden_size: 20
     layers: 3
     dropout: 0
+
+temporal_fusion_transformer:
+    sliding_window:
+        max_prediction_length: 10
+        min_prediction_length: 10
+        max_encoder_length: 150
+        min_encoder_length: 150
+        batch_size: 64
+
+    train_val_split: 1
+    related_stock: 2  # 0 to disable
+    manual_scale: True
+    hidden_size: 16
+    lstm_layers: 1
+    dropout: 0.05
+    attention_head_size: 4
 
 gmm:
     path: './cache/'

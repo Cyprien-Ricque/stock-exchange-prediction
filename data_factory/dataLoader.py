@@ -14,11 +14,12 @@ logger.setLevel(DEBUG)
 
 
 class StockPricesLoader:
-    def __init__(self, config_file='../config/config.yml', log_level: int = INFO, use_previous_files=True):
+    def __init__(self, config_file='../config/config.yml', log_level: int = INFO, use_previous_files=True, export=True):
         logger.setLevel(log_level)
 
         config = load_config(config_file)
         self.config = config
+        self.export = export
 
         self.model = config['model']
         self.model_config = config[self.model]
@@ -173,6 +174,8 @@ class StockPricesLoader:
         """
         Export preprocessed data to a file whose name is the config.
         """
+        if not self.export:
+            return
         pickle.dump(self.__dict__(), open(self.export_file_name, "wb"))
         logger.info(f'Data exported to "{self.export_file_name}"')
 
@@ -222,10 +225,12 @@ class StockPricesLoader:
         logger.debug('train timeseries created')
 
         # Validation timeseries
-        self.df_val_timeseries = TimeSeriesDataSet.from_dataset(self.df_train_timeseries, self.df_val_ppc,
-                                                                predict=False,
-                                                                stop_randomization=True)
-        logger.debug('validation timeseries created')
+        self.df_val_timeseries = None
+        if self.train_val_split != 1:
+            self.df_val_timeseries = TimeSeriesDataSet.from_dataset(self.df_train_timeseries, self.df_val_ppc,
+                                                                    predict=False,
+                                                                    stop_randomization=True)
+            logger.debug('validation timeseries created')
 
         # Test timeseries
         self.df_test_timeseries = TimeSeriesDataSet.from_dataset(
@@ -247,7 +252,9 @@ class StockPricesLoader:
         self.train_dl = self.df_train_timeseries.to_dataloader(train=True, batch_size=self.batch_size, num_workers=12)
         logger.debug('train data loader created')
 
-        self.val_dl = self.df_val_timeseries.to_dataloader(train=False, batch_size=self.batch_size, num_workers=12)
+        self.val_dl = None
+        if self.df_val_timeseries:
+            self.val_dl = self.df_val_timeseries.to_dataloader(train=False, batch_size=self.batch_size, num_workers=12)
         logger.debug('validation data loader created')
 
         self.test_dl = self.df_test_timeseries.to_dataloader(

@@ -21,15 +21,15 @@ pl.seed_everything(42)
 
 
 config = load_config("../config/config.yml")
-
-dl = StockPricesLoader(use_previous_files=True)
+assert config['model'] == 'rnn', 'Invalid model in file configuration for this script'
+dl = StockPricesLoader(use_previous_files=True, export=False)
 
 
 from pytorch_forecasting.models.rnn import RecurrentNetwork
 
 early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=10, verbose=False, mode="min")
 lr_logger = LearningRateMonitor()  # log the learning rate
-logger = TensorBoardLogger("../notebooks/lightning_logs")  # logging results to a tensorboard
+logger = TensorBoardLogger("lightning_logs")  # logging results to a tensorboard
 
 args = dict(
     hidden_size=config['rnn']['hidden_size'],
@@ -58,4 +58,7 @@ rnn = RecurrentNetwork.from_dataset(
 
 print(f"Number of parameters in network: {rnn.size() / 1e3:.1f}k")
 
-trainer.fit(rnn, train_dataloaders=dl.train_dl, val_dataloaders=dl.val_dl)
+
+# # fit network
+
+trainer.fit(rnn, train_dataloaders=dl.train_dl, val_dataloaders=dl.test_dl)
