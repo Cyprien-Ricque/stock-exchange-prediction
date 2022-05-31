@@ -1,9 +1,12 @@
+import hashlib
 import os
 import pickle
+from itertools import product
 from logging import INFO
 
 import numpy as np
-import hashlib
+from tqdm import tqdm
+
 from data_factory.preprocessing import *
 from pytorch_forecasting import TimeSeriesDataSet
 from utilities.config import load_config
@@ -16,6 +19,8 @@ logger.setLevel(DEBUG)
 class StockPricesLoader:
     def __init__(self, config_file='../config/config.yml', log_level: int = INFO, use_previous_files=True, export=True):
         logger.setLevel(log_level)
+
+        self.initialized = False
 
         config = load_config(config_file)
         self.config = config
@@ -68,14 +73,18 @@ class StockPricesLoader:
             logger.info(f"""Use previously generated file {self.export_file_name}. 
             Can not redo preprocessing by loading from generated file.""")
             self.from_file()
-            return
+            self.initialized = True
+        else:
+            logger.info('Use init() method to load the data')
 
+    def init(self):
         self.load()
         self.preprocess()
         self.add_related_stocks()
         self.to_timeseries()
         self.to_dataloader()
         self.to_file()
+        self.initialized = True
 
     def load(self):
         """
@@ -127,6 +136,8 @@ class StockPricesLoader:
 
         self.df_train_ppc, self.df_val_ppc, self.df_test_ppc = self.df_train.copy(), self.df_val.copy(), self.df_test.copy()
 
+        self.fix_adjusted_price()
+
         if self.scale:
             self._scale()
 
@@ -137,11 +148,17 @@ class StockPricesLoader:
         logger.info('Preprocessing not integrated in TimeSeriesDataSet done.')
 
     def _scale(self):
-        self.scalers = train_scalers_on_timeseries(self.df_train)
+        cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+        self.scalers = {}
 
-        self.df_train_ppc = scale_timeseries(self.df_train_ppc, scalers=self.scalers)
-        self.df_val_ppc = scale_timeseries(self.df_val_ppc, scalers=self.scalers)
-        self.df_test_ppc = scale_timeseries(self.df_test_ppc, scalers=self.scalers)
+        def _scale_col(col):
+            self.scalers[col] = train_scalers_on_timeseries(self.df_train, col=col)
+            self.df_train_ppc = scale_timeseries(self.df_train_ppc, scalers=self.scalers[col], col=col)
+            self.df_val_ppc = scale_timeseries(self.df_val_ppc, scalers=self.scalers[col], col=col)
+            self.df_test_ppc = scale_timeseries(self.df_test_ppc, scalers=self.scalers[col], col=col)
+
+        for col in cols:
+            _scale_col(col)
 
         logger.debug('Data scaled')
 
@@ -202,28 +219,30 @@ class StockPricesLoader:
     def to_timeseries(self):
         additionals_cols = [f'Close_scaled_top_{i}' for i in range(self.related_stocks)]
         logger.info(f'Add columns {additionals_cols}')
+        time_varying_unknown_reals = ['Close_scaled', 'Open_scaled', 'High_scaled', 'Low_scaled', 'Volume_scaled',
+                                      'AdjustmentFactor', 'ExpectedDividend'] + additionals_cols
         # Train timeseries
-        self.df_train_timeseries = TimeSeriesDataSet(self.df_train_ppc,
-                                                     time_idx='Timestamp',
-                                                     target='Close_scaled',
-                                                     group_ids=['SecuritiesCode'],
-                                                     allow_missing_timesteps=False,
-                                                     # static_categoricals=['SecuritiesCode'],
-                                                     time_varying_unknown_reals=['Close_scaled'],
-                                                     # time_varying_unknown_reals=['Open', 'High', 'Low', 'Close', 'Volume'],
-                                                     # time_varying_unknown_categoricals=['SupervisionFlag'],
-                                                     time_varying_known_reals=additionals_cols,
-
-                                                     min_encoder_length=self.min_encoder_length,
-                                                     max_encoder_length=self.max_encoder_length,
-                                                     max_prediction_length=self.max_prediction_length,
-                                                     min_prediction_length=self.min_prediction_length,
-                                                     scalers={col: None for col in ['Open', 'High', 'Low', 'Volume', 'AdjustmentFactor', 'ExpectedDividend'] + additionals_cols},
-                                                     target_normalizer=None,
-                                                     add_relative_time_idx=False,
-                                                     add_target_scales=False,
-                                                     add_encoder_length=False,
-                                                     )
+        self.df_train_timeseries = TimeSeriesDataSet(
+            self.df_train_ppc,
+            time_idx='Timestamp',
+            target='Close_scaled',
+            group_ids=['SecuritiesCode'],
+            allow_missing_timesteps=False,
+            # static_categoricals=['SecuritiesCode'],
+            # time_varying_unknown_reals=['Close_scaled'],
+            time_varying_unknown_reals=time_varying_unknown_reals,
+            time_varying_unknown_categoricals=['SupervisionFlag'],
+            time_varying_known_reals=additionals_cols,
+            min_encoder_length=self.min_encoder_length,
+            max_encoder_length=self.max_encoder_length,
+            max_prediction_length=self.max_prediction_length,
+            min_prediction_length=self.min_prediction_length,
+            scalers={col: None for col in list(set(time_varying_unknown_reals) - {'Close_scaled'})},
+            target_normalizer=None,
+            add_relative_time_idx=self.model == 'temporal_fusion_transformer',
+            add_target_scales=False,
+            add_encoder_length=False,
+        )
         logger.debug('train timeseries created')
 
         # Validation timeseries
@@ -303,13 +322,29 @@ class StockPricesLoader:
                               left_on=[t, 'Timestamp'],
                               right_on=['SecuritiesCode', 'Timestamp'],
                               suffixes=('', f'_{t}')).drop(columns=f'SecuritiesCode_{t}')
-                df[f'Close_scaled_{t}'] = df[f'Close_scaled_{t}'].shift(self.max_prediction_length)
+                df[f'Close_scaled_{t}'] = df[f'Close_scaled_{t}']#.shift(self.max_prediction_length)
             return df.fillna(value=0)
 
         self.df_train_ppc = _add_stocks(self.df_train_ppc)
         self.df_test_ppc = _add_stocks(self.df_test_ppc)
         self.df_test_ppc_ext = _add_stocks(self.df_test_ppc_ext)
         self.df_val_ppc = _add_stocks(self.df_val_ppc)
+
+    def fix_adjusted_price(self):
+        dfs = [self.df_train_ppc, self.df_val_ppc, self.df_test_ppc]
+        cols = ['Open', 'High', 'Low', 'Close']
+
+        logger.info('adjust prices')
+
+        def __fix_adjusted_price(df, col):
+            for sc in tqdm(df.SecuritiesCode.unique()):
+                df_sc = df[df.SecuritiesCode == sc]
+                for ts, adj_f, in zip(df_sc.Timestamp[df_sc.AdjustmentFactor != 1], df_sc.AdjustmentFactor[df_sc.AdjustmentFactor != 1]):
+                    df.loc[(df.Timestamp <= ts) & (df.SecuritiesCode == sc), col] = df.loc[(df.Timestamp <= ts) & (df.SecuritiesCode == sc), col] * adj_f
+
+        for df, col in product(dfs, cols):
+            __fix_adjusted_price(df, col)
+        logger.info(f'fix value with adjusted price done')
 
 
 if __name__ == '__main__':
