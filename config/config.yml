@@ -2,11 +2,54 @@ device: 'cpu'
 
 seed: False
 
-data:
-    path: './data/'
+model: 'rnn'
 
-model:
-    name: 'gmm'
+data:
+    save: '../data/save/'
+    suppl: '../data/suppl/'
+    train_path: '../data/jpx-tokyo-stock-exchange-prediction/train_files/'
+    test_path: '../data/jpx-tokyo-stock-exchange-prediction/supplemental_files/'
+
+    financials: 'financials.csv'
+    stock_prices: 'stock_prices.csv'
+    options: 'options.csv'
+    secondary_stock_price: 'secondary_stock_price.csv'
+    trades: 'trades.csv'
+
+    cosine: 'cosine_df.csv'
+
+rnn:
+    sliding_window:
+        max_prediction_length: 10
+        min_prediction_length: 10
+        max_encoder_length: 150
+        min_encoder_length: 150
+        batch_size: 64
+
+    train_val_split: 1
+    related_stock: 2  # 0 to disable
+    manual_scale: True
+    hidden_size: 20
+    layers: 3
+    dropout: 0
+
+temporal_fusion_transformer:
+    sliding_window:
+        max_prediction_length: 10
+        min_prediction_length: 10
+        max_encoder_length: 150
+        min_encoder_length: 150
+        batch_size: 64
+
+    train_val_split: 1
+    related_stock: 2  # 0 to disable
+    manual_scale: True
+    hidden_size: 16
+    lstm_layers: 1
+    dropout: 0.05
+    attention_head_size: 4
+
+gmm:
     path: './cache/'
     n_clusters: 4
 
