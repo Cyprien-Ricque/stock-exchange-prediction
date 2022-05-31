@@ -139,3 +139,5 @@ dmypy.json
 ./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/secondary_stock_prices.csv
 ./data/jpx-tokyo-stock-exchange-prediction/supplemental_files/trades.csv
 
+./data
+./data/*
