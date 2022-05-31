@@ -3,7 +3,7 @@ import pickle
 from logging import INFO
 
 import numpy as np
-
+import hashlib
 from data_factory.preprocessing import *
 from pytorch_forecasting import TimeSeriesDataSet
 from utilities.config import load_config
@@ -57,7 +57,9 @@ class StockPricesLoader:
         self.scale = self.model_config['manual_scale']
 
         # define file name for saving StockPricesLoader with specific config
-        self.export_file_name = f"{self.save_folder}/export_{hash(self.model_config.__str__())}.p"
+        hash_ = hashlib.md5(self.model_config.__str__().encode('utf-8')).hexdigest()
+        self.export_file_name = f"{self.save_folder}/export_{hash_}.p"
+        logger.debug(f'Export file {self.export_file_name}')
 
         logger.debug(f'Use config {config}')
 
