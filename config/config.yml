@@ -2,7 +2,7 @@ device: 'cpu'
 
 seed: False
 
-model: 'rnn'
+model: 'temporal_fusion_transformer'
 
 data:
     save: '../data/save/'
@@ -42,7 +42,7 @@ temporal_fusion_transformer:
         batch_size: 64
 
     train_val_split: 1
-    related_stock: 2  # 0 to disable
+    related_stock: 3  # 0 to disable
     manual_scale: True
     hidden_size: 16
     lstm_layers: 1
