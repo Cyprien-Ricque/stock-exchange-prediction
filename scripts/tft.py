@@ -20,7 +20,7 @@ config = load_config("../config/config.yml")
 
 assert config['model'] == 'temporal_fusion_transformer', 'Invalid model in file configuration for this script'
 
-dl = StockPricesLoader(use_previous_files=True)
+dl = StockPricesLoader(use_previous_files=True, export=False)
 if not dl.initialized:
     dl.init()
 
@@ -30,23 +30,20 @@ import logging
 from logging import WARNING
 logging.basicConfig(level=WARNING)
 
-early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=10, verbose=False, mode="min")
+early_stop_callback = EarlyStopping(monitor="train_loss", min_delta=1e-4, patience=2, verbose=False, mode="min")
 lr_logger = LearningRateMonitor()  # log the learning rate
 logger = TensorBoardLogger("lightning_logs")  # logging results to a tensorboard
 
-
 args = dict(
-    hidden_size=16, #config['temporal_fusion_transformer']['hidden_size'],
-    lstm_layers=1, #config['temporal_fusion_transformer']['lstm_layers'],
+    hidden_size=config['temporal_fusion_transformer']['hidden_size'],
+    lstm_layers=config['temporal_fusion_transformer']['lstm_layers'],
     dropout=config['temporal_fusion_transformer']['dropout'],
-    attention_head_size=4,#config['temporal_fusion_transformer']['attention_head_size']
-    # output_size=dl.max_prediction_length,
-    # max_encoder_length=dl.max_encoder_length
+    attention_head_size=config['temporal_fusion_transformer']['attention_head_size'],
+    output_size=config['temporal_fusion_transformer']['output_size'],
 )
 
-# configure network and trainer
 trainer = pl.Trainer(
-    accelerator='gpu',
+    accelerator='cpu',
     gradient_clip_val=0.1,
     # clipping gradients is a hyperparameter and important to prevent divergence
     # of the gradient for recurrent neural networks
@@ -70,6 +67,6 @@ print(f"Number of parameters in network: {model.size() / 1e3:.1f}k")
 fit = True
 
 if fit:
-    trainer.fit(model, train_dataloaders=dl.train_dl, val_dataloaders=dl.val_dl)
+    trainer.fit(model, train_dataloaders=dl.train_dl, val_dataloaders=None)
 else:
-    model = TemporalFusionTransformer.load_from_checkpoint('././lightning_logs/lightning_logs/version_5/checkpoints/epoch=0-step=49915.ckpt')
+    model = TemporalFusionTransformer.load_from_checkpoint('./lightning_logs/lightning_logs/version_41/checkpoints/epoch=0-step=46790.ckpt')
