@@ -2,7 +2,7 @@ device: 'cpu'
 
 seed: False
 
-model: 'rnn'
+model: 'temporal_fusion_transformer'
 
 data:
     save: '../data/save/'
@@ -42,11 +42,12 @@ temporal_fusion_transformer:
         batch_size: 64
 
     train_val_split: 1
-    related_stock: 2  # 0 to disable
+    related_stock: 5  # 0 to disable
     manual_scale: True
     hidden_size: 16
-    lstm_layers: 1
+    lstm_layers: 2
     dropout: 0.05
+    output_size: 7  # Can't be something else otherwise tft does not work
     attention_head_size: 4
 
 gmm:
