@@ -78,6 +78,8 @@ def add_days(df: pd.DataFrame,
     :return: dataset with new days
     """
 
+    logger.warning('This function is not ready to be used with something else than test set')
+
     def _add_days(data: pd.DataFrame):
         a = data.loc[:, grp_col].iloc[0]
         data = data.copy().set_index(timestamp_col, drop=True)
@@ -86,6 +88,7 @@ def add_days(df: pd.DataFrame,
         data.loc[:, grp_col] = a
         data.authentic.fillna(value=False, inplace=True)
         data.loc[data.AdjustmentFactor.isnull(), 'AdjustmentFactor'] = 1.  # Not generic yet. TODO
+        data.loc[data.AdjustmentFactor.isnull(), 'is_testing'] = False  # Not generic yet. TODO
         data.loc[:, date_col] = pd.to_datetime(data.Timestamp,
                                                unit='d')  # make it possible to add smthg else than days TODO
         data.fillna(0, inplace=True)  # make this configurable TODO

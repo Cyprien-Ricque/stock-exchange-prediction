@@ -47,7 +47,7 @@ temporal_fusion_transformer:
     hidden_size: 16
     lstm_layers: 2
     dropout: 0.05
-    output_size: 5
+    output_size: 7  # Can't be something else otherwise tft does not work
     attention_head_size: 4
 
 gmm:
