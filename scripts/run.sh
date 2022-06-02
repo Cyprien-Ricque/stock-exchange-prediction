@@ -1,2 +1,2 @@
 #!/bin/sh
-python rnn.py
+python tft.py
