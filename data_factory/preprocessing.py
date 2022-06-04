@@ -83,15 +83,19 @@ def add_days(df: pd.DataFrame,
     def _add_days(data: pd.DataFrame):
         a = data.loc[:, grp_col].iloc[0]
         data = data.copy().set_index(timestamp_col, drop=True)
-        data = data.reindex(data.index.to_list() + list(range(data.index.max() + 1, data.index.max() + days + 1)))
+        size_ = data.shape[0]
+        data = data.reindex(data.index.to_list() + list(range(data.index.max() + 1, data.index.max() + (days*2) + 1)))
         data.reset_index(drop=False, inplace=True)
         data.loc[:, grp_col] = a
         data.authentic.fillna(value=False, inplace=True)
-        data.loc[data.AdjustmentFactor.isnull(), 'AdjustmentFactor'] = 1.  # Not generic yet. TODO
-        data.loc[data.AdjustmentFactor.isnull(), 'is_testing'] = False  # Not generic yet. TODO
+        data.AdjustmentFactor.fillna(value=1, inplace=True)  # Not generic. TODO
+        data.is_testing.fillna(value=False, inplace=True)  # Not generic. TODO
+
         data.loc[:, date_col] = pd.to_datetime(data.Timestamp,
                                                unit='d')  # make it possible to add smthg else than days TODO
-        data.fillna(0, inplace=True)  # make this configurable TODO
+        data.fillna(method='ffill', inplace=True)  # make this configurable TODO
+        data = data.loc[data.Date.dt.dayofweek <= 4].copy()
+        data = data.iloc[:size_+days, :].copy()
         return data
 
     if 'authentic' not in df.columns:
