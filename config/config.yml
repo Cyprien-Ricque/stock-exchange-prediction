@@ -13,7 +13,7 @@ data:
     financials: 'financials.csv'
     stock_prices: 'stock_prices.csv'
     options: 'options.csv'
-    secondary_stock_price: 'secondary_stock_price.csv'
+    secondary_stock_price: 'secondary_stock_prices.csv'
     trades: 'trades.csv'
 
     cosine: 'cosine_df.csv'
@@ -35,8 +35,8 @@ rnn:
 
 temporal_fusion_transformer:
     sliding_window:
-        max_prediction_length: 10
-        min_prediction_length: 10
+        max_prediction_length: 5
+        min_prediction_length: 5
         max_encoder_length: 150
         min_encoder_length: 150
         batch_size: 64

@@ -69,7 +69,7 @@ trainer = pl.Trainer(
     callbacks=[lr_logger, early_stop_callback],
     logger=logger,
     weights_summary="top",
-    max_epochs=3
+    max_epochs=10
 )
 
 model = TemporalFusionTransformer.from_dataset(
