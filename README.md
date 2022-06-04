@@ -5,7 +5,7 @@ Kaggle competition "JPX Tokyo Stock Exchange Prediction" for final Deep Learning
 
 ````bash
 pip3 install kaggle
--- Add your credentials see: https://github.com/Kaggle/kaggle-api
+-- Add your credentials see: 
 kaggle competitions download -c jpx-tokyo-stock-exchange-prediction
 ````
 Then, move the downloaded folder "jpx-tokyo-stock-exchange-prediction" in ./data
