@@ -49,7 +49,7 @@ import logging
 from logging import WARNING
 logging.basicConfig(level=WARNING)
 
-early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=2, verbose=False, mode="min")
+early_stop_callback = EarlyStopping(monitor="val_loss", min_delta=1e-4, patience=1, verbose=False, mode="min")
 lr_logger = LearningRateMonitor()
 logger = TensorBoardLogger("lightning_logs")
 

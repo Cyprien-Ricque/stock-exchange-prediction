@@ -22,8 +22,8 @@ rnn:
     sliding_window:
         max_prediction_length: 10
         min_prediction_length: 10
-        max_encoder_length: 150
-        min_encoder_length: 150
+        max_encoder_length: 80
+        min_encoder_length: 80
         batch_size: 64
 
     train_val_split: 1
@@ -42,7 +42,7 @@ temporal_fusion_transformer:
         batch_size: 64
 
     train_val_split: 1
-    related_stock: 5  # 0 to disable
+    related_stock: 3  # 0 to disable
     manual_scale: True
     hidden_size: 16
     lstm_layers: 2
