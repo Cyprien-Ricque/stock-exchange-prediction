@@ -1,3 +1,5 @@
+# OLD
+
 import sys
 
 sys.path.append("../../pytorch-forecasting")
@@ -6,7 +8,6 @@ sys.path.append("../")
 import pytorch_lightning as pl
 import seaborn as sns
 import torch
-from data_factory.dataLoader import StockPricesLoader
 from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import TensorBoardLogger
 from tqdm import notebook

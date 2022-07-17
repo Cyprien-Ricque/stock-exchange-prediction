@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+import torch
+
 # From Kaggle https://www.kaggle.com/code/smeitoma/jpx-competition-metric-definition/notebook
 
 
@@ -34,3 +36,17 @@ def calc_spread_return_sharpe(df: pd.DataFrame, portfolio_size: int = 200, topra
     buf = df.groupby('Date').apply(_calc_spread_return_per_day, portfolio_size, toprank_weight_ratio)
     sharpe_ratio = buf.mean() / buf.std()
     return sharpe_ratio
+
+
+def sharp_ratio_loss(y_hat, targets):
+    """
+
+    :param y_hat: shape (day, stock price rank)
+    :return:
+    """
+    def per_day(y_hat_day, targets_day, toprank_weight_ratio, portfolio_size):
+        weights = torch.linspace(start=toprank_weight_ratio, end=1, steps=portfolio_size) + torch.zeros(2000 - portfolio_size)
+        sorted_indices = torch.sort(y_hat_day)[1]
+
+        target_derived_from_rank = y_hat_day * (targets_day / y_hat_day)
+        torch.sort(target_derived_from_rank).based_on(y_hat_day)

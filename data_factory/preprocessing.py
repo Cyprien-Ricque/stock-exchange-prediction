@@ -7,9 +7,9 @@ from typing import Literal
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-logging.basicConfig(level=DEBUG)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-logger.setLevel(DEBUG)
+logger.setLevel(logging.WARNING)
 
 date_to_timestamp = {
     '1min': lambda date_val: date_val / 10 ** 9,
